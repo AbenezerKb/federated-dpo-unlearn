@@ -1,0 +1,70 @@
+model:
+  name: "meta-llama/Meta-Llama-3.1-8B-Instruct"
+  dtype: "bfloat16"
+  max_length: 512
+  trust_remote_code: false
+
+lora:
+  rank: 16
+  alpha: 32
+  dropout: 0.05
+  target_modules:
+    - "q_proj"
+    - "v_proj"
+    - "k_proj"
+    - "o_proj"
+  task_type: "CAUSAL_LM"
+
+fl:
+  num_clients: 5
+  forget_client_id: 0
+  num_rounds_alignment: 10
+  num_rounds_unlearning: 5
+  fraction_fit: 1.0
+  local_epochs_alignment: 3
+  local_epochs_unlearning: 3
+  batch_size: 4
+  gradient_accumulation_steps: 4
+  aggregation: "fedavg"  # fedavg | fedavg_gradient_shielding
+
+unlearning:
+  objective: "simnpo"  # dpo | npo | simnpo | simpo | fugas
+  beta: 0.1
+  gamma: 1.0  # SimPO margin
+  learning_rate: 5.0e-5
+  weight_decay: 0.01
+  warmup_ratio: 0.1
+  retain_weight: 1.0  # weight for retain loss during unlearning
+
+gradient_shielding:
+  enabled: false
+  subspace_dim: 64
+  projection_strength: 1.0
+
+eval:
+  batch_size: 8
+  truth_ratio: true
+  rouge: true
+  mia: true
+  model_utility: true
+  forget_quality: true
+  generation_max_length: 256
+
+hardware:
+  train_gpu: 0      # RTX PRO 6000 96GB
+  eval_gpu: 1       # RTX 4090 24GB
+  ref_model_gpu: 1  # reference model on eval GPU
+
+data:
+  dataset: "locuslab/TOFU"
+  forget_ratio: 0.1  # fraction of data per client to forget
+  non_iid: false
+  non_iid_alpha: 0.5  # Dirichlet alpha for non-IID partitioning
+  seed: 42
+
+logging:
+  wandb_project: "fed-dpo-unlearn"
+  wandb_entity: null
+  log_interval: 10
+  save_checkpoints: true
+  checkpoint_dir: "results/checkpoints"
